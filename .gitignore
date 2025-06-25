@@ -1,0 +1,5 @@
+.env
+/docs/swagger.*
+/docs/docs.go
+*.exe
+*.log
