@@ -1,5 +1,28 @@
+# Бинарные файлы
+*.exe
+*.out
+*.test
+
+# Логи
+*.log
+
+# .env-файлы с секретами
 .env
+
+# Swagger docs
 /docs/swagger.*
 /docs/docs.go
-*.exe
-*.log
+
+# Кэш Go
+**/vendor/
+/bin/
+/build/
+/coverage.out
+
+# IDE-шный мусор
+.vscode/
+.idea/
+.DS_Store
+
+# OS-specific
+Thumbs.db
