@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+
 	_ "github.com/lib/pq"
 )
 
@@ -33,7 +34,7 @@ func (db *DB) Close() {
 	db.Conn.Close()
 }
 
-func (db *DB) GetBookByID(id int) (Book, error) {
+func GetBookByID(id int, db *DB) (Book, error) {
 	query := "SELECT id, title, description FROM books WHERE id = $1"
 	row := db.Conn.QueryRow(query, id)
 
@@ -49,7 +50,7 @@ func (db *DB) GetBookByID(id int) (Book, error) {
 	return book, nil
 }
 
-func (db *DB) GetBooks() ([]Book, error) {
+func GetBooks(db *DB) ([]Book, error) {
 	rows, err := db.Conn.Query("SELECT id, title, description FROM books")
 	if err != nil {
 		return nil, err
@@ -69,19 +70,19 @@ func (db *DB) GetBooks() ([]Book, error) {
 	return books, nil
 }
 
-func (db *DB) AddBook(book Book) error {
+func AddBook(book Book, db *DB) error {
 	query := "INSERT INTO books (title, description) VALUES ($1, $2)"
 	_, err := db.Conn.Exec(query, book.Title, book.Description)
 	return err
 }
 
-func (db *DB) UpdateBook(book Book) error {
+func UpdateBook(book Book, db *DB) error {
 	query := "UPDATE books SET title = $1, description = $2 WHERE id = $3"
 	_, err := db.Conn.Exec(query, book.Title, book.Description, book.ID)
 	return err
 }
 
-func (db *DB) DeleteBook(id int) error {
+func DeleteBook(id int, db *DB) error {
 	query := "DELETE FROM books WHERE id = $1"
 	_, err := db.Conn.Exec(query, id)
 	return err
