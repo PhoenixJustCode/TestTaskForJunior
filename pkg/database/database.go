@@ -19,8 +19,8 @@ type DB struct {
 	Conn *sql.DB
 }
 
-func NewDB(dataSource string) (*DB, error) {
-	conn, err := sql.Open("postgres", dataSource)
+func NewDB(dsn string) (*DB, error) {
+	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
