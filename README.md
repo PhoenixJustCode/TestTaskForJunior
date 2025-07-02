@@ -22,6 +22,8 @@
 - [Gin](https://github.com/gin-gonic/gin) — фреймворк для HTTP-сервера
 - [Swaggo](https://github.com/swaggo/swag) — генерация Swagger-документации
 - [Docker & Docker Compose](https://www.docker.com/)
+- [Envconfig](https://github.com/kelseyhightower/envconfig) — correct export from env file
+- [Logrus](https://github.com/sirupsen/logrus) — Логирование с помощью Logrus
 - [Makefile](https://www.gnu.org/software/make/) — автоматизация команд
 - `.env` — переменные окружения
 
