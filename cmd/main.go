@@ -5,16 +5,26 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
-	"TestTaskForJun/pkg/database"
 	_ "TestTaskForJun/docs" // swag docs
+	"TestTaskForJun/pkg/database"
+	envconfig "github.com/kelseyhightower/envconfig"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 var db *database.DB
+
+type DataBaseData struct {
+	Host     string
+	Port     int
+	User     string
+	Name     string
+	Password string
+}
+
+
 
 // Получить книгу по ID
 func getBookByID(db *database.DB) http.HandlerFunc {
@@ -132,18 +142,21 @@ func deleteBook(db *database.DB) http.HandlerFunc {
 	}
 }
 
+
+
 func main() {
-	var err error
-	data := fmt.Sprintf(
-		"host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PASSWORD"),
+	var cfg DataBaseData
+	err := envconfig.Process("DB", &cfg)
+	if err != nil {
+		log.Fatal("Ошибка обработки переменных окружения:", err)
+	}
+
+	dsn := fmt.Sprintf(
+		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
+		cfg.Host, cfg.Port, cfg.User, cfg.Name, cfg.Password,
 	)
 
-	db, err = database.NewDB(data)
+	db, err = database.NewDB(dsn)
 	if err != nil {
 		log.Fatal("DB connection error:", err)
 	}
