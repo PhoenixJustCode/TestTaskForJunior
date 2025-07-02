@@ -3,36 +3,9 @@ package database
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"log"
-
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
-
-type Book struct {
-	ID          int64  `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
-type DB struct {
-	Conn *sql.DB
-}
-
-func NewDB(dsn string) (*DB, error) {
-	conn, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, err
-	}
-	if err := conn.Ping(); err != nil {
-		return nil, err
-	}
-	return &DB{Conn: conn}, nil
-}
-
-func (db *DB) Close() {
-	db.Conn.Close()
-}
 
 func GetBookByID(id int, db *DB) (Book, error) {
 	query := "SELECT id, title, description FROM books WHERE id = $1"
@@ -42,7 +15,11 @@ func GetBookByID(id int, db *DB) (Book, error) {
 	err := row.Scan(&book.ID, &book.Title, &book.Description)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return book, fmt.Errorf("book not found")
+			log.WithFields(log.Fields{
+				"handler": "Get book by id book",
+				"problem": "book not found",
+			}).Error(err)
+			return book, err
 		}
 		return book, err
 	}
@@ -62,7 +39,10 @@ func GetBooks(db *DB) ([]Book, error) {
 		var b Book
 		err := rows.Scan(&b.ID, &b.Title, &b.Description)
 		if err != nil {
-			log.Println("Scan error:", err)
+			log.WithFields(log.Fields{
+				"handler": "Get book",
+				"problem": "with scan book from DB",
+			}).Error(err)
 			continue
 		}
 		books = append(books, b)
@@ -73,17 +53,29 @@ func GetBooks(db *DB) ([]Book, error) {
 func AddBook(book Book, db *DB) error {
 	query := "INSERT INTO books (title, description) VALUES ($1, $2)"
 	_, err := db.Conn.Exec(query, book.Title, book.Description)
+	log.WithFields(log.Fields{
+		"handler": "Add book",
+		"problem": "with exec sql",
+	}).Error(err)
 	return err
 }
 
 func UpdateBook(book Book, db *DB) error {
 	query := "UPDATE books SET title = $1, description = $2 WHERE id = $3"
 	_, err := db.Conn.Exec(query, book.Title, book.Description, book.ID)
+	log.WithFields(log.Fields{
+		"handler": "Update book",
+		"problem": "with exec sql",
+	}).Error(err)
 	return err
 }
 
 func DeleteBook(id int, db *DB) error {
 	query := "DELETE FROM books WHERE id = $1"
 	_, err := db.Conn.Exec(query, id)
+	log.WithFields(log.Fields{
+		"handler": "Delete book",
+		"problem": "with exec sql",
+	}).Error(err)
 	return err
 }
