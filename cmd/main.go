@@ -49,7 +49,7 @@ func main() {
 	http.HandleFunc("/book/", psql.GetBookByID(db))
 	http.HandleFunc("/books", psql.GetAllBooks(db))
 	http.HandleFunc("/create", psql.CreateBook(db))
-	http.HandleFunc("/update", psql.UpdateBook(db))
+	http.HandleFunc("/update/", psql.UpdateBook(db))
 	http.HandleFunc("/delete/", psql.DeleteBook(db))
 
 	http.Handle("/swagger/", httpSwagger.WrapHandler)

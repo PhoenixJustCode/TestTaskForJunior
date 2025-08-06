@@ -83,7 +83,7 @@ func CreateBook(db *database.DB) http.HandlerFunc {
 	}
 }
 
-// Обновить книгу
+// обновление книги
 func UpdateBook(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
@@ -91,21 +91,53 @@ func UpdateBook(db *database.DB) http.HandlerFunc {
 			return
 		}
 
-		var book database.Book
-		if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+		// Извлечение ID
+		idStr := strings.TrimPrefix(r.URL.Path, "/update/")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "Invalid ID", http.StatusBadRequest)
+			return
+		}
+
+		// Получаем старую книгу из БД
+		oldBook, err := database.GetBookByID(id, db)
+		if err != nil {
+			http.Error(w, "Book not found", http.StatusNotFound)
+			return
+		}
+
+		// Декодим JSON
+		var updatedBook database.Book
+		if err := json.NewDecoder(r.Body).Decode(&updatedBook); err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
-		if err := database.UpdateBook(book, db); err != nil {
+		// Если поле пустое — сохраняем старое значение
+		if updatedBook.Description == "" {
+			updatedBook.Description = oldBook.Description
+		}
+		if updatedBook.Title == "" {
+			updatedBook.Title = oldBook.Title
+		}
+
+		// Обязательно передаём ID
+		updatedBook.ID = int64(id)
+
+		// Обновляем в БД
+		if err := database.UpdateBook(updatedBook, db); err != nil {
 			http.Error(w, "Failed to update book", http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Fprintln(w, "Book updated")
-		log.Info("book was update")
+		fmt.Fprintf(w, "Book updated with ID %d\n", id)
+		log.WithFields(log.Fields{
+			"handler": "Update book",
+			"id":      id,
+		}).Info("Book successfully updated")
 	}
 }
+
 
 // Удалить книгу
 func DeleteBook(db *database.DB) http.HandlerFunc {
