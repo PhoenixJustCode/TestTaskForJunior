@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"TestTaskForJun/internal/psql"
+	"github.com/gorilla/mux"
 )
 
 var db *database.DB
@@ -46,14 +47,17 @@ func main() {
 	}
 	defer db.Close()
 
-	http.HandleFunc("/book/", psql.GetBookByID(db))
-	http.HandleFunc("/books", psql.GetAllBooks(db))
-	http.HandleFunc("/create", psql.CreateBook(db))
-	http.HandleFunc("/update/", psql.UpdateBook(db))
-	http.HandleFunc("/delete/", psql.DeleteBook(db))
 
-	http.Handle("/swagger/", httpSwagger.WrapHandler)
+	r := mux.NewRouter()
+	r.HandleFunc("/book/{id}", psql.GetBookByID(db)).Methods("GET")
+	r.HandleFunc("/books", psql.GetAllBooks(db)).Methods("GET")
+	r.HandleFunc("/create", psql.CreateBook(db)).Methods("POST")
+	r.HandleFunc("/update/{id}", psql.UpdateBook(db)).Methods("PUT")
+	r.HandleFunc("/delete/{id}", psql.DeleteBook(db)).Methods("DELETE")
+	
+	r.Handle("/swagger/", httpSwagger.WrapHandler)
 
+	http.Handle("/", r)
 	log.Info("Сервер запущен на :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -2,13 +2,12 @@ package psql
 
 import (
 	"TestTaskForJun/pkg/database"
-	// envconfig "github.com/kelseyhightower/envconfig"
 	"net/http"
 	"strconv"
-	"strings"
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/gorilla/mux"
 )
 
 
@@ -21,7 +20,8 @@ func GetBookByID(db *database.DB) http.HandlerFunc {
 			return
 		}
 
-		idStr := strings.TrimPrefix(r.URL.Path, "/book/")
+		vars := mux.Vars(r)
+		idStr := vars["id"]
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
 			http.Error(w, "Invalid ID", http.StatusBadRequest)
@@ -91,29 +91,26 @@ func UpdateBook(db *database.DB) http.HandlerFunc {
 			return
 		}
 
-		// Извлечение ID
-		idStr := strings.TrimPrefix(r.URL.Path, "/update/")
+		vars := mux.Vars(r)
+		idStr := vars["id"]
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
 			http.Error(w, "Invalid ID", http.StatusBadRequest)
 			return
 		}
 
-		// Получаем старую книгу из БД
 		oldBook, err := database.GetBookByID(id, db)
 		if err != nil {
 			http.Error(w, "Book not found", http.StatusNotFound)
 			return
 		}
 
-		// Декодим JSON
 		var updatedBook database.Book
 		if err := json.NewDecoder(r.Body).Decode(&updatedBook); err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
-		// Если поле пустое — сохраняем старое значение
 		if updatedBook.Description == "" {
 			updatedBook.Description = oldBook.Description
 		}
@@ -121,10 +118,7 @@ func UpdateBook(db *database.DB) http.HandlerFunc {
 			updatedBook.Title = oldBook.Title
 		}
 
-		// Обязательно передаём ID
 		updatedBook.ID = int64(id)
-
-		// Обновляем в БД
 		if err := database.UpdateBook(updatedBook, db); err != nil {
 			http.Error(w, "Failed to update book", http.StatusInternalServerError)
 			return
@@ -138,7 +132,6 @@ func UpdateBook(db *database.DB) http.HandlerFunc {
 	}
 }
 
-
 // Удалить книгу
 func DeleteBook(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +140,8 @@ func DeleteBook(db *database.DB) http.HandlerFunc {
 			return
 		}
 
-		idStr := strings.TrimPrefix(r.URL.Path, "/delete/")
+		vars := mux.Vars(r)
+		idStr := vars["id"]
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
 			http.Error(w, "Invalid ID", http.StatusBadRequest)
