@@ -2,7 +2,8 @@ package main
 
 import (
 	_ "TestTaskForJun/docs" // swag docs
-	"TestTaskForJun/pkg/database"
+	"TestTaskForJun/internal/database/psql"
+	"TestTaskForJun/internal/database"
 	"fmt"
 	envconfig "github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
@@ -10,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"TestTaskForJun/internal/auth"
-	"TestTaskForJun/internal/psql"
 	"github.com/gorilla/mux"
 )
 

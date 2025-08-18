@@ -1,7 +1,7 @@
 package psql
 
 import (
-	"TestTaskForJun/pkg/database"
+	"TestTaskForJun/internal/database"
 	"net/http"
 	"strconv"
 	"encoding/json"
