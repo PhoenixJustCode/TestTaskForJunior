@@ -9,6 +9,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"os"
+	"TestTaskForJun/internal/auth"
 	"TestTaskForJun/internal/psql"
 	"github.com/gorilla/mux"
 )
@@ -21,12 +22,14 @@ type envData struct {
 	User     string
 	Name     string
 	Password string
+	JWTSecret string `envconfig:"JWT_SECRET"`
 }
 
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.WarnLevel)
+
 }
 
 func main() {
@@ -36,6 +39,8 @@ func main() {
 		log.Fatal("Ошибка обработки переменных окружения:", err)
 	}
 
+	auth.InitJWT(cfg.JWTSecret)
+	
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
 		cfg.Host, cfg.Port, cfg.User, cfg.Name, cfg.Password,
@@ -56,6 +61,15 @@ func main() {
 	r.HandleFunc("/delete/{id}", psql.DeleteBook(db)).Methods("DELETE")
 	
 	r.Handle("/swagger/", httpSwagger.WrapHandler)
+	
+	r.HandleFunc("/register", auth.RegisterHandler(db.Conn)).Methods("POST")
+	r.HandleFunc("/login", auth.LoginHandler(db.Conn)).Methods("POST")
+	r.HandleFunc("/refresh", auth.RefreshHandler(db.Conn)).Methods("POST")
+
+	// защищённые роуты
+	api := r.PathPrefix("/api").Subrouter()
+	api.Use(auth.JWTMiddleware)
+	api.HandleFunc("/books", psql.GetAllBooks(db)).Methods("GET")
 
 	http.Handle("/", r)
 	log.Info("Сервер запущен на :8080")
