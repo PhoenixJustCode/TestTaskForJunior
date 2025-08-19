@@ -12,6 +12,7 @@ import (
 	"os"
 	"TestTaskForJun/internal/auth"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 var db *database.DB
@@ -20,7 +21,7 @@ type envData struct {
 	Host     string
 	Port     int
 	User     string
-	Name     string
+	Name_DB     string
 	Password string
 	JWTSecret string `envconfig:"JWT_SECRET"`
 }
@@ -29,7 +30,7 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.WarnLevel)
-
+	godotenv.Load()
 }
 
 func main() {
@@ -43,8 +44,9 @@ func main() {
 	
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
-		cfg.Host, cfg.Port, cfg.User, cfg.Name, cfg.Password,
+		cfg.Host, cfg.Port, cfg.User, cfg.Name_DB, cfg.Password,
 	)
+	fmt.Println(dsn)
 
 	db, err = database.NewDB(dsn)
 	if err != nil {
@@ -54,12 +56,6 @@ func main() {
 
 
 	r := mux.NewRouter()
-	r.HandleFunc("/book/{id}", psql.GetBookByID(db)).Methods("GET")
-	r.HandleFunc("/books", psql.GetAllBooks(db)).Methods("GET")
-	r.HandleFunc("/create", psql.CreateBook(db)).Methods("POST")
-	r.HandleFunc("/update/{id}", psql.UpdateBook(db)).Methods("PUT")
-	r.HandleFunc("/delete/{id}", psql.DeleteBook(db)).Methods("DELETE")
-	
 	r.Handle("/swagger/", httpSwagger.WrapHandler)
 	
 	r.HandleFunc("/register", auth.RegisterHandler(db.Conn)).Methods("POST")
@@ -70,6 +66,10 @@ func main() {
 	api := r.PathPrefix("/api").Subrouter()
 	api.Use(auth.JWTMiddleware)
 	api.HandleFunc("/books", psql.GetAllBooks(db)).Methods("GET")
+	api.HandleFunc("/book/{id}", psql.GetBookByID(db)).Methods("GET")
+	api.HandleFunc("/create", psql.CreateBook(db)).Methods("POST")
+	api.HandleFunc("/update/{id}", psql.UpdateBook(db)).Methods("PUT")
+	api.HandleFunc("/delete/{id}", psql.DeleteBook(db)).Methods("DELETE")
 
 	http.Handle("/", r)
 	log.Info("Сервер запущен на :8080")

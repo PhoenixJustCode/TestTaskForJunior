@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -17,8 +17,9 @@ func InitJWT(secret string) {
 
 type Claims struct {
 	UserID int `json:"user_id"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
+
 
 // Хэширование пароля
 func HashPassword(password string) (string, error) {
@@ -35,14 +36,14 @@ func CheckPasswordHash(password, hash string) bool {
 // Генерация access + refresh токенов
 func GenerateTokens(userID int) (string, string, error) {
 	// access токен
-	expirationTime := time.Now().Add(15 * time.Minute)
-	claims := &Claims{
+	accessExp := time.Now().Add(15 * time.Minute)
+	accessClaims := &Claims{
 		UserID: userID,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(accessExp),
 		},
 	}
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	accessString, err := accessToken.SignedString(jwtKey)
 	if err != nil {
 		return "", "", err
@@ -52,8 +53,8 @@ func GenerateTokens(userID int) (string, string, error) {
 	refreshExp := time.Now().Add(7 * 24 * time.Hour)
 	refreshClaims := &Claims{
 		UserID: userID,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: refreshExp.Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(refreshExp),
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
@@ -65,6 +66,7 @@ func GenerateTokens(userID int) (string, string, error) {
 	return accessString, refreshString, nil
 }
 
+
 // Валидация токена
 func ValidateToken(tokenStr string) (*Claims, error) {
 	claims := &Claims{}
@@ -73,10 +75,11 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	})
 
 	if err != nil || !token.Valid {
-		return nil, fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 	return claims, nil
 }
+
 
 // Сохраняем refresh в БД
 func SaveRefreshToken(db *sql.DB, userID int, token string, exp time.Time) error {
