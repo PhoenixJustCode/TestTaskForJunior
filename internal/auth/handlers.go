@@ -61,13 +61,7 @@ func RegisterHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// выдаём токены
-		access, refresh, _ := GenerateTokens(userID)
-		SaveRefreshToken(db, userID, refresh, time.Now().Add(7*24*time.Hour))
-
-		json.NewEncoder(w).Encode(map[string]string{
-			"access_token":  access,
-			"refresh_token": refresh,
-		})
+		getTokens(w,r,db, userID)
 	}
 }
 
@@ -88,13 +82,7 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		access, refresh, _ := GenerateTokens(userID)
-		SaveRefreshToken(db, userID, refresh, time.Now().Add(7*24*time.Hour))
-
-		json.NewEncoder(w).Encode(map[string]string{
-			"access_token":  access,
-			"refresh_token": refresh,
-		})
+		getTokens(w,r,db, userID)
 	}
 }
 
@@ -129,13 +117,55 @@ func RefreshHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Генерация новых токенов
-		access, refresh, _ := GenerateTokens(userID)
-		SaveRefreshToken(db, userID, refresh, time.Now().Add(7*24*time.Hour))
-
-		json.NewEncoder(w).Encode(map[string]string{
-			"access_token":  access,
-			"refresh_token": refresh,
-		})
+		getTokens(w,r,db, userID)
 	}
 }
+
+
+// функция выхода и удаление 
+func LogoutHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var refreshToken string
+		if cookie, err := r.Cookie("refresh_token"); err == nil && cookie.Value != "" {
+			refreshToken = cookie.Value
+		}
+
+		if refreshToken == "" {
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				refreshToken = strings.TrimPrefix(authHeader, "Bearer ")
+			}
+		}
+
+		if refreshToken != "" {
+			if _, err := db.Exec("DELETE FROM refresh_tokens WHERE token=$1", refreshToken); err != nil {
+				http.Error(w, "failed to delete token", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		clearCookieHandler(w, r)
+
+		w.WriteHeader(http.StatusOK)
+		// w.Write([]byte(`{"message":"logged out"}`))
+	}
+}
+
+
+
+// Генерация новых токенов
+func getTokens(w http.ResponseWriter, r *http.Request, db *sql.DB, userID int) {
+	access, refresh, _ := GenerateTokens(userID)
+	
+	SaveRefreshToken(db, userID, refresh, time.Now().Add(7*24*time.Hour))
+
+	setCookieHandler(w, r, refresh)
+	
+	json.NewEncoder(w).Encode(map[string]string{
+		"access_token":  access,
+	})
+
+}
+
+
+

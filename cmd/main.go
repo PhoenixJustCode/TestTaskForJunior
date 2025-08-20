@@ -61,6 +61,7 @@ func main() {
 	r.HandleFunc("/register", auth.RegisterHandler(db.Conn)).Methods("POST")
 	r.HandleFunc("/login", auth.LoginHandler(db.Conn)).Methods("POST")
 	r.HandleFunc("/refresh", auth.RefreshHandler(db.Conn)).Methods("POST")
+	r.HandleFunc("/logout", auth.LogoutHandler(db.Conn)).Methods("POST")
 
 	// защищённые роуты
 	api := r.PathPrefix("/api").Subrouter()
